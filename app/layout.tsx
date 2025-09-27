@@ -22,7 +22,7 @@ const comicFont = Comic_Neue({
 });
 
 export const metadata: Metadata = {
-  title: "Valiant Voices",
+  title: "Lyrical Lords",
   description: "Write songs, pass lyrics, create musical masterpieces together",
 };
 
