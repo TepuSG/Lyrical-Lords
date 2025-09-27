@@ -13,6 +13,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const prevURL = "/app/page.js";
+
 const comicFont = Comic_Neue({
   variable: "--font-comic",
   subsets: ["latin"],
