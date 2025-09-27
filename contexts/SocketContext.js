@@ -37,6 +37,12 @@ export function SocketProvider({ children }) {
       setIsConnected(true);
     });
 
+    // Handle connection errors (e.g. server not running)
+    socketInstance.on('connect_error', (err) => {
+      console.error('Socket connect error:', err);
+      setIsConnected(false);
+    });
+
     socketInstance.on('disconnect', () => {
       console.log('Disconnected from server');
       setIsConnected(false);

@@ -81,10 +81,10 @@ function LobbyContent() {
               </h3>
               <button 
                 onClick={handleStartGame}
-                disabled={players.length < 2 || !isConnected}
+                disabled={players.length < 3 || !isConnected}
                 className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-4 px-8 rounded-lg text-xl transition-colors duration-200 shadow-lg"
               >
-                {players.length < 2 ? `Need ${2 - players.length} more players` : 'Start Game'}
+                {players.length < 3 ? `Need ${3 - players.length} more players` : 'Start Game'}
               </button>
             </div>
           </div>
