@@ -27,10 +27,20 @@ function ResultsContent() {
 
         {lyricsResults && (
           <ul className="space-y-4">
-            {lyricsResults.map((r, idx) => (
+            {lyricsResults.map((song, idx) => (
               <li key={idx} className="p-4 bg-gray-50 rounded-md">
-                <div className="text-sm text-gray-500 mb-2">Assigned title: <strong>{r.assignedSong}</strong></div>
-                <div className="text-lg">{r.lyrics}</div>
+                <div className="text-sm text-gray-500 mb-2">Title: <strong>{song.title}</strong></div>
+                <div className="space-y-2 mt-2">
+                  {song.lyrics && song.lyrics.length > 0 ? (
+                    song.lyrics.map((ly, i) => (
+                      <div key={i} className="text-gray-800">
+                        {ly.text}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-gray-500">No lyrics submitted for this song.</div>
+                  )}
+                </div>
               </li>
             ))}
           </ul>

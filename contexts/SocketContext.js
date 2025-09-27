@@ -20,14 +20,21 @@ export function SocketProvider({ children }) {
   const [gameState, setGameState] = useState('lobby');
   const [assignedSong, setAssignedSong] = useState(null);
   const [lyricsResults, setLyricsResults] = useState(null);
+  const [roundProgress, setRoundProgress] = useState(null);
+  const [roomFrozen, setRoomFrozen] = useState(false);
+  const [joinError, setJoinError] = useState(null);
 
   useEffect(() => {
     // Initialize socket connection
+    // Prefer an explicit public URL (NEXT_PUBLIC_SITE_URL). In development, default to the same hostname
+    // but use the socket server port (default 3002). This avoids trying to open a websocket to the
+    // frontend origin when the Socket.IO server runs on a different port.
+    const defaultSocketPort = process.env.NEXT_PUBLIC_SOCKET_PORT || '3002';
     const socketUrl = process.env.NEXT_PUBLIC_SITE_URL || 
-                      (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3002');
-    
+                      (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:${defaultSocketPort}` : `http://localhost:${defaultSocketPort}`);
+
     console.log('Connecting to Socket.IO server:', socketUrl);
-    
+
     const socketInstance = io(socketUrl, {
       transports: ['websocket', 'polling'],
       timeout: 20000,
@@ -43,6 +50,14 @@ export function SocketProvider({ children }) {
     socketInstance.on('connect_error', (err) => {
       console.error('Socket connect error:', err);
       setIsConnected(false);
+    });
+
+    socketInstance.on('error', (err) => {
+      console.error('Socket general error:', err);
+    });
+
+    socketInstance.on('reconnect_error', (err) => {
+      console.error('Socket reconnect error:', err);
     });
 
     socketInstance.on('disconnect', () => {
@@ -64,15 +79,40 @@ export function SocketProvider({ children }) {
     });
 
     // Assigned song/title for the lyrics phase (private per-player)
-    socketInstance.on('start-lyrics', (payload) => {
-      // payload: { assignedTitle, assignedFrom, roomCode }
+    // Server emits 'assign-lyric' for each round assignment
+    socketInstance.on('assign-lyric', (payload) => {
+      // payload: { assignedIndex, assignedTitle, lastLyric, round, totalRounds, roomCode }
+      // new assignment -> clear any prior round progress
+      setRoundProgress(null);
       setAssignedSong(payload);
     });
 
-    // When all lyrics are submitted, store results so pages can read and navigate
-    socketInstance.on('all-lyrics-submitted', (payload) => {
-      // payload: array of { playerId, lyrics, assignedSong, submittedAt }
+    // When all rounds complete server emits 'all-songs-complete' with final songs
+    socketInstance.on('all-songs-complete', (payload) => {
+      // payload: array of song objects { title, authorId, authorNickname, lyrics }
       setLyricsResults(payload);
+    });
+
+    // Round progress updates (how many players submitted their lyric for the current round)
+    socketInstance.on('round-progress', (data) => {
+      // data: { submitted, total, round, totalRounds }
+      setRoundProgress(data);
+    });
+
+    socketInstance.on('players-frozen', (data) => {
+      console.log('Players frozen:', data);
+      setRoomFrozen(true);
+    });
+
+    socketInstance.on('join-error', (data) => {
+      console.warn('Join error:', data);
+      setJoinError(data && data.message ? data.message : 'Unable to join room');
+    });
+
+    // Acknowledgement from server that title submission was received
+    socketInstance.on('title-ack', (data) => {
+      console.log('Server acknowledged title submission:', data);
+      // Could set local state or provide UI feedback if desired
     });
 
     setSocket(socketInstance);
@@ -101,9 +141,10 @@ export function SocketProvider({ children }) {
     }
   };
 
-  const submitLyrics = (roomCode, lyrics, assignedSong) => {
+  // Submit lyric for the currently assigned song index
+  const submitLyrics = (roomCode, lyrics, assignedIndex) => {
     if (socket) {
-      socket.emit('submit-lyrics', { roomCode, lyrics, assignedSong });
+      socket.emit('submit-lyrics', { roomCode, lyrics, assignedIndex });
     }
   };
 
@@ -123,6 +164,9 @@ export function SocketProvider({ children }) {
     players,
     gameState,
     assignedSong,
+    roundProgress,
+    roomFrozen,
+    joinError,
     lyricsResults,
     joinRoom,
     startGame,

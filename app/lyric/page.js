@@ -6,12 +6,12 @@ import { useSearchParams, useRouter } from 'next/navigation';
 
 function LyricContent() {
   const [lyric, setLyric] = useState('');
+  const [hasSubmitted, setHasSubmitted] = useState(false);
   const searchParams = useSearchParams();
   const roomCode = searchParams.get('code') || '';
   const router = useRouter();
 
-  const { assignedSong, submitLyrics, socket } = useSocket();
-  const { lyricsResults } = useSocket();
+  const { assignedSong, lyricsResults, submitLyrics, socket, roundProgress } = useSocket();
 
   useEffect(() => {
     // If assignedSong isn't present (e.g., user navigated here manually), redirect back to lobby
@@ -34,14 +34,24 @@ function LyricContent() {
 
   const handleSubmit = () => {
     if (!lyric.trim()) return;
-    if (submitLyrics) {
-      submitLyrics(roomCode, lyric.trim(), assignedSong?.assignedTitle || '');
+    const assignedIndex = assignedSong?.assignedIndex;
+    if (typeof assignedIndex === 'number' && submitLyrics) {
+      submitLyrics(roomCode, lyric.trim(), assignedIndex);
     } else if (socket) {
-      socket.emit('submit-lyrics', { roomCode, lyrics: lyric.trim(), assignedSong: assignedSong?.assignedTitle || '' });
+      socket.emit('submit-lyrics', { roomCode, lyrics: lyric.trim(), assignedIndex });
     }
     setLyric('');
+    // mark as submitted locally so button is disabled while waiting for others
+    setHasSubmitted(true);
     // Optionally navigate or show confirmation; server will emit progress/all-lyrics-submitted
   };
+
+  // Reset submission state when a new assignment arrives (next round)
+  useEffect(() => {
+    if (assignedSong) {
+      setHasSubmitted(false);
+    }
+  }, [assignedSong]);
 
   return (
     <div className="w-full">
@@ -54,7 +64,11 @@ function LyricContent() {
       <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md mx-auto">
         <h2 className="text-2xl font-semibold text-gray-800 text-center mb-4">Write lyrics for this title</h2>
         <div className="text-center mb-6">
-          <div className="text-lg font-bold">{assignedSong ? assignedSong.assignedTitle : 'Waiting for assignment...'}</div>
+          <div className="text-lg font-bold">
+            {assignedSong ? (
+              assignedSong.lastLyric ? assignedSong.lastLyric : (assignedSong.assignedTitle ? assignedSong.assignedTitle : 'Write the first lyric')
+            ) : 'Waiting for assignment...'}
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -67,10 +81,17 @@ function LyricContent() {
           />
           <button
             onClick={handleSubmit}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-md transition-colors duration-200"
+            disabled={hasSubmitted || !lyric.trim()}
+            className={`w-full ${hasSubmitted ? 'bg-gray-400 cursor-default' : 'bg-blue-600 hover:bg-blue-700'} text-white font-semibold py-3 px-4 rounded-md transition-colors duration-200`}
           >
-            Submit Lyric
+            {hasSubmitted ? 'Waiting for others...' : 'Submit Lyric'}
           </button>
+          {/* Show round progress if available */}
+          {hasSubmitted && roundProgress && (
+            <div className="text-center text-sm text-gray-600 mt-2">
+              {roundProgress.submitted} of {roundProgress.total} submitted (Round {roundProgress.round} / {roundProgress.totalRounds})
+            </div>
+          )}
         </div>
       </div>
     </div>

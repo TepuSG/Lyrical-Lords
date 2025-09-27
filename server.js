@@ -33,8 +33,18 @@ app.prepare().then(() => {
 
     // Join a room
     socket.on('join-room', ({ roomCode, nickname }) => {
+      // If the room exists and has been frozen (title phase finished), reject late joins
+      if (gameRooms.has(roomCode)) {
+        const existingRoom = gameRooms.get(roomCode);
+        if (existingRoom.frozen || existingRoom.gameState !== 'lobby') {
+          socket.emit('join-error', { message: 'Room is closed for joining. The game is already in progress.' });
+          console.log(`Rejected join for ${nickname} to room ${roomCode} (frozen or in-progress)`);
+          return;
+        }
+      }
+
       socket.join(roomCode);
-      
+
       // Initialize room if it doesn't exist
       if (!gameRooms.has(roomCode)) {
         gameRooms.set(roomCode, {
@@ -42,12 +52,14 @@ app.prepare().then(() => {
           gameState: 'lobby', // lobby, playing, finished
           currentRound: 0,
           songTitles: [],
-          lyrics: []
+          songs: [],
+          lyrics: [],
+          frozen: false
         });
       }
-      
+
       const room = gameRooms.get(roomCode);
-      
+
       // Add player if not already in room
       if (!room.players.find(p => p.id === socket.id)) {
         room.players.push({
@@ -56,11 +68,12 @@ app.prepare().then(() => {
           joinedAt: new Date()
         });
       }
-      
+
       // Send updated player list to all players in room
       io.to(roomCode).emit('players-update', room.players);
-      
+
       console.log(`${nickname} joined room ${roomCode}`);
+      console.log(`Room ${roomCode} now has ${room.players.length} player(s):`, room.players.map(p => p.id));
     });
 
     // Start game
@@ -73,7 +86,7 @@ app.prepare().then(() => {
       }
     });
 
-    // Submit song title
+    // Submit song title and initialize songs when all titles are in
     socket.on('submit-song-title', ({ roomCode, songTitle }) => {
       const room = gameRooms.get(roomCode);
       if (room) {
@@ -82,6 +95,16 @@ app.prepare().then(() => {
           title: songTitle,
           submittedAt: new Date()
         });
+
+        // Acknowledge back to the submitting client so they know server received it
+        try {
+          io.to(socket.id).emit('title-ack', {
+            submitted: room.songTitles.length,
+            total: room.players.length
+          });
+        } catch (err) {
+          console.error('Error sending title-ack', err);
+        }
 
         // DEBUG: log current submission state for this room
         try {
@@ -94,46 +117,52 @@ app.prepare().then(() => {
 
         // Check if all players have submitted
         if (room.songTitles.length === room.players.length) {
-          // Assign each player a title that they did NOT submit.
-          // Build arrays of players and titles
-          const players = room.players.slice(); // [{id, nickname}]
-          const titles = room.songTitles.slice(); // [{playerId, title}]
-
-          // Create an array of indices for titles and derange until no index matches the same player
+          // Build songs array in the same order as room.players
+          const players = room.players.slice();
+          const titles = room.songTitles.slice();
           const n = players.length;
-          let indices = Array.from({ length: n }, (_, i) => i);
 
-          // Helper: shuffle array in-place
-          function shuffle(arr) {
-            for (let i = arr.length - 1; i > 0; i--) {
-              const j = Math.floor(Math.random() * (i + 1));
-              [arr[i], arr[j]] = [arr[j], arr[i]];
+          room.songs = players.map((p) => {
+            const t = titles.find(tt => tt.playerId === p.id);
+            return {
+              title: t ? t.title : 'Untitled',
+              authorId: p.id,
+              authorNickname: p.nickname,
+              lyrics: []
+            };
+          });
+
+          room.totalRounds = n; // option A: everyone writes every song
+          room.currentRound = 0;
+          room.roundSubmissions = 0;
+          room.roundSubmittedPlayerIds = new Set();
+          // Freeze the player list to prevent late joins / changes
+          room.frozen = true;
+          io.to(roomCode).emit('players-frozen', { message: 'Player list frozen. Game in progress.' });
+
+          // Helper to emit assignments for the current round
+          function emitAssignmentsForRound(r) {
+            // We offset by +1 so that on r=0 each player receives someone else's song for the first lyric.
+            for (let i = 0; i < n; i++) {
+              const player = players[i];
+              const assignedIndex = (i + r + 1) % n;
+              const song = room.songs[assignedIndex];
+              const lastLyric = song.lyrics.length > 0 ? song.lyrics[song.lyrics.length - 1].text : null;
+              // Reveal the title only on the very first lyric round (r === 0) to the assigned writer — not the author
+              const showTitle = (song.lyrics.length === 0 && r === 0);
+              io.to(player.id).emit('assign-lyric', {
+                assignedIndex,
+                assignedTitle: showTitle ? song.title : null,
+                lastLyric,
+                round: r + 1,
+                totalRounds: room.totalRounds,
+                roomCode
+              });
             }
           }
 
-          // Attempt to derange: shuffle until no player gets their own title
-          let attempts = 0;
-          do {
-            shuffle(indices);
-            attempts++;
-            // If too many attempts (unlikely), break and allow possible conflicts
-            if (attempts > 1000) break;
-          } while (indices.some((idx, i) => titles[idx].playerId === players[i].id));
-
-          // Emit assigned title to each player privately and then signal start of lyrics phase
-          for (let i = 0; i < n; i++) {
-            const player = players[i];
-            const assignedTitleObj = titles[indices[i]];
-            const fromPlayer = room.players.find(p => p.id === assignedTitleObj.playerId);
-            const fromNickname = fromPlayer ? fromPlayer.nickname : 'Unknown';
-
-            // Send assigned title only to the specific player
-            io.to(player.id).emit('start-lyrics', {
-              assignedTitle: assignedTitleObj.title,
-              assignedFrom: fromNickname,
-              roomCode
-            });
-          }
+          // Start first round
+          emitAssignmentsForRound(0);
         } else {
           // Update progress
           io.to(roomCode).emit('submission-progress', {
@@ -144,25 +173,67 @@ app.prepare().then(() => {
       }
     });
 
-    // Submit lyrics
-    socket.on('submit-lyrics', ({ roomCode, lyrics, assignedSong }) => {
+    // Submit lyrics for a given assignedIndex (round-based)
+    socket.on('submit-lyrics', ({ roomCode, lyrics, assignedIndex }) => {
       const room = gameRooms.get(roomCode);
-      if (room) {
-        room.lyrics.push({
+      if (room && typeof assignedIndex === 'number') {
+        // Prevent duplicate submissions in the same round by same player
+        if (!room.roundSubmittedPlayerIds) room.roundSubmittedPlayerIds = new Set();
+        if (room.roundSubmittedPlayerIds.has(socket.id)) {
+          // ignore duplicate
+          return;
+        }
+
+        // Append lyric to the correct song
+        if (!room.songs || !room.songs[assignedIndex]) return;
+
+        room.songs[assignedIndex].lyrics.push({
           playerId: socket.id,
-          lyrics: lyrics,
-          assignedSong: assignedSong,
+          text: lyrics,
           submittedAt: new Date()
         });
-        
-        // Check if all players have submitted lyrics
-        if (room.lyrics.length === room.players.length) {
-          io.to(roomCode).emit('all-lyrics-submitted', room.lyrics);
-        } else {
-          io.to(roomCode).emit('lyrics-progress', {
-            submitted: room.lyrics.length,
-            total: room.players.length
-          });
+
+        room.roundSubmittedPlayerIds.add(socket.id);
+        room.roundSubmissions = (room.roundSubmissions || 0) + 1;
+
+        // Emit round progress to the room
+        io.to(roomCode).emit('round-progress', {
+          submitted: room.roundSubmissions,
+          total: room.players.length,
+          round: room.currentRound + 1,
+          totalRounds: room.totalRounds
+        });
+
+        // If all players submitted for this round, advance
+        if (room.roundSubmissions >= room.players.length) {
+          // reset for next round
+          room.roundSubmissions = 0;
+          room.roundSubmittedPlayerIds = new Set();
+          room.currentRound = (room.currentRound || 0) + 1;
+
+          if (room.currentRound < room.totalRounds) {
+            // emit next round assignments
+            for (let i = 0; i < room.players.length; i++) {
+              const player = room.players[i];
+              // Keep the same +1 offset applied at the start so assignments rotate correctly
+              const assignedIndex = (i + room.currentRound + 1) % room.players.length;
+              const song = room.songs[assignedIndex];
+              const lastLyric = song.lyrics.length > 0 ? song.lyrics[song.lyrics.length - 1].text : null;
+
+              // After the first round, titles should not be revealed (first-round reveal handled earlier)
+              io.to(player.id).emit('assign-lyric', {
+                assignedIndex,
+                assignedTitle: null,
+                lastLyric,
+                round: room.currentRound + 1,
+                totalRounds: room.totalRounds,
+                roomCode
+              });
+            }
+          } else {
+            // All rounds complete — send final songs
+            io.to(roomCode).emit('all-songs-complete', room.songs);
+          }
         }
       }
     });
