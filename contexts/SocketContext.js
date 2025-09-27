@@ -29,11 +29,25 @@ export function SocketProvider({ children }) {
     // Prefer an explicit public URL (NEXT_PUBLIC_SITE_URL). In development, default to the same hostname
     // but use the socket server port (default 3002). This avoids trying to open a websocket to the
     // frontend origin when the Socket.IO server runs on a different port.
-    const defaultSocketPort = process.env.NEXT_PUBLIC_SOCKET_PORT || '3002';
-    const socketUrl = process.env.NEXT_PUBLIC_SITE_URL || 
-                      (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:${defaultSocketPort}` : `http://localhost:${defaultSocketPort}`);
+  // Allow an explicit socket URL for deployed environments (e.g. https://valiantvoices.onrender.com)
+  // This prevents the client from appending a default port like :3002 which will break wss on platforms
+  // that terminate TLS at the platform/proxy.
+  const explicitSocketUrl = process.env.NEXT_PUBLIC_SOCKET_URL; // e.g. https://valiantvoices.onrender.com or https://valiantvoices.onrender.com:3002
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  const defaultSocketPort = process.env.NEXT_PUBLIC_SOCKET_PORT || '3002';
+
+  const socketUrl = explicitSocketUrl || siteUrl || 
+            (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:${defaultSocketPort}` : `http://localhost:${defaultSocketPort}`);
 
     console.log('Connecting to Socket.IO server:', socketUrl);
+    try {
+      const urlObj = new URL(socketUrl);
+      if (urlObj.port && urlObj.port !== '80' && urlObj.port !== '443' && typeof window !== 'undefined' && window.location.protocol === 'https:') {
+        console.warn('Socket URL uses a non-standard port while page is HTTPS. This may fail on hosted platforms that proxy TLS. Consider setting NEXT_PUBLIC_SOCKET_URL to your deployed origin (no port).');
+      }
+    } catch (e) {
+      // ignore malformed URL parsing
+    }
 
     const socketInstance = io(socketUrl, {
       transports: ['websocket', 'polling'],
