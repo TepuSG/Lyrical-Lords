@@ -30,7 +30,8 @@ function Header() {
     <header className="bg-black shadow-sm border-b border-gray-700">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex-shrink-0">
+          <div className="flex items-center space-x-4">
+            <img src="/LyricalLordsLight.png" alt="logo" className="w-10 h-10" />
             <h1 className="text-xl font-bold text-white">Lyrical Lords</h1>
           </div>
           <nav>
@@ -51,7 +52,7 @@ function Footer() {
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           <p className="text-sm text-gray-400">
-            <small>Valiant Voices</small>
+            <small>Lyrical Lords</small>
           </p>
         </div>
       </div>
