@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function Nickname() {
+function NicknameContent() {
   const [nickname, setNickname] = useState('');
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -57,5 +57,13 @@ export default function Nickname() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function Nickname() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="text-gray-600">Loading...</div></div>}>
+      <NicknameContent />
+    </Suspense>
   );
 }

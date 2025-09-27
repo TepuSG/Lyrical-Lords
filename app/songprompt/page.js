@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useSocket } from '../../contexts/SocketContext';
 
-export default function SongPrompt() {
+function SongPromptContent() {
   const searchParams = useSearchParams();
   const roomCode = searchParams.get('code') || '';
-    const [songTitle, setSongTitle] = useState('');
+  const [songTitle, setSongTitle] = useState('');
   const { socket } = useSocket();
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
@@ -46,5 +46,13 @@ export default function SongPrompt() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SongPrompt() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="text-gray-600">Loading...</div></div>}>
+      <SongPromptContent />
+    </Suspense>
   );
 }

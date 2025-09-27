@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useSocket } from '../../contexts/SocketContext';
 import { useSearchParams } from 'next/navigation';
 
-export default function Lyric() {
+function LyricContent() {
   const [lyric, setLyric] = useState('');
   const searchParams = useSearchParams();
   const roomCode = searchParams.get('code') || '';
@@ -48,3 +48,11 @@ export default function Lyric() {
     </div>
   );
 }   
+
+export default function Lyric() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="text-gray-600">Loading...</div></div>}>
+      <LyricContent />
+    </Suspense>
+  );
+}

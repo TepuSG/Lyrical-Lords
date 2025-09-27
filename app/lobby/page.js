@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSocket } from '../../contexts/SocketContext';
 
-export default function Lobby() {
+function LobbyContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { players, isConnected, joinRoom, startGame, gameState } = useSocket();
@@ -91,5 +91,15 @@ export default function Lobby() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Lobby() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-600">Loading lobby...</div>
+      </div>}>
+      <LobbyContent />
+    </Suspense>
   );
 }
