@@ -17,7 +17,7 @@
 }
 
 body {
-  background: var(--background);
+  /* Removed background color to allow PNG background from layout */
   color: var(--foreground);
   font-family: Georgia, 'Times New Roman', serif;
 }
@@ -32,3 +32,58 @@ body {
   text-shadow: 0 0 10px #fbbf24, 0 0 20px #f59e0b, 0 0 30px #d97706;
   animation: flicker 2s infinite;
 }
+
+/* Make white card backgrounds slightly translucent so the page background shows through */
+.bg-white {
+  background-color: #ffffff !important;
+}
+
+/* Keep light panels transparent unless explicitly white */
+.bg-gray-50 {
+  background-color: transparent !important;
+}
+
+/* Subtitle class for black subtext under titles */
+.subtitle-black {
+  color: #000000 !important;
+}
+
+/* Default page card used by layout to wrap page contents */
+.page-card {
+  background-color: rgba(255,255,255,0.12); /* very transparent white */
+  color: #000000; /* readable dark text inside cards */
+  border-radius: 0.5rem; /* slightly tighter corners */
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08); /* slightly stronger shadow to lift card */
+  border: 1px solid rgba(255,255,255,0.08); /* subtle light border */
+  /* Make the card slightly shorter visually while keeping page-level scrolling.
+    If the card content exceeds this height it will overflow into the page (no internal scrollbar). */
+  max-height: calc(100vh - 10rem);
+  overflow: visible; /* disable internal scrolling inside the card */
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* vertically center card children */
+}
+
+.page-card a,
+.page-card p,
+.page-card h1,
+.page-card h2,
+.page-card h3,
+.page-card h4,
+.page-card h5,
+.page-card h6,
+.page-card span,
+.page-card label,
+.page-card li {
+  color: inherit; /* keep elements using the card's text color */
+}
+
+/* Modifier: make a card even more compact when needed */
+.page-card--compact {
+  padding: 0.75rem !important;
+  max-width: 48rem;
+}
+
+/* Page-level scrolling is enabled. The .page-card is configured to expand with its content
+   and not create its own internal scrollbar, so users scroll the whole page instead of
+   the individual card. */

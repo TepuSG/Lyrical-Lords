@@ -64,18 +64,33 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Use a fixed background layer so the PNG reliably shows behind all content
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${comicFont.variable} font-comic antialiased min-h-screen flex flex-col`}
+        className={`${geistSans.variable} ${geistMono.variable} ${comicFont.variable} font-comic antialiased`}
       >
-        <SocketProvider>
-          <Header />
-          <main className="flex-grow">
-            {children}
-          </main>
-          <Footer />
-        </SocketProvider>
+        {/* Background layer - fixed, behind everything */}
+        <div
+          aria-hidden="true"
+          className="fixed inset-0 -z-10 bg-cover bg-center"
+          style={{ backgroundImage: 'url("/lyricallordsbg.png")' }}
+        />
+
+        <div className="min-h-screen flex flex-col">
+          <SocketProvider>
+            <Header />
+            <main className="flex-grow">
+              {/* Default page container: wraps pages that don't already use cards so text is readable */}
+              <div className="mx-auto w-full max-w-6xl p-6 sm:p-8">
+                <div className="page-card rounded-lg shadow-md p-6 sm:p-8 backdrop-blur-sm">
+                  {children}
+                </div>
+              </div>
+            </main>
+            <Footer />
+          </SocketProvider>
+        </div>
       </body>
     </html>
   );

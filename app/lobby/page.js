@@ -38,7 +38,7 @@ function LobbyContent() {
         <div className="text-4xl font-bold font-mono text-blue-600 bg-white px-6 py-3 rounded-lg shadow-md inline-block">
           {roomCode}
         </div>
-        <div className="mt-2 text-sm text-gray-600">
+        <div className="mt-2 text-sm subtitle-black">
           {isConnected ? (
             <span className="text-green-600">✓ Connected</span>
           ) : (
@@ -97,7 +97,7 @@ function LobbyContent() {
 export default function Lobby() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">Loading lobby...</div>
+        <div className="subtitle-black">Loading lobby...</div>
       </div>}>
       <LobbyContent />
     </Suspense>

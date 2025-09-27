@@ -22,7 +22,7 @@ export function SocketProvider({ children }) {
   useEffect(() => {
     // Initialize socket connection
     const socketUrl = process.env.NEXT_PUBLIC_SITE_URL || 
-                      (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001');
+                      (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3002');
     
     console.log('Connecting to Socket.IO server:', socketUrl);
     

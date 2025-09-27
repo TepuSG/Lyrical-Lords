@@ -24,7 +24,7 @@ function NicknameContent() {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
           Room: {roomCode || 'Unknown'}
         </h1>
-        <p className="text-lg text-gray-600">
+        <p className="text-lg subtitle-black">
           Choose your nickname to join the game
         </p>
       </div>
@@ -62,7 +62,7 @@ function NicknameContent() {
 
 export default function Nickname() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="text-gray-600">Loading...</div></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="subtitle-black">Loading...</div></div>}>
       <NicknameContent />
     </Suspense>
   );
