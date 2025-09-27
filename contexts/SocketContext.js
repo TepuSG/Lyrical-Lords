@@ -21,11 +21,17 @@ export function SocketProvider({ children }) {
 
   useEffect(() => {
     // Initialize socket connection
-    // Prefer an explicit env var, otherwise fall back to the current page origin (same host)
-    const defaultUrl = typeof window !== 'undefined' ? window.location.origin : undefined;
-    const socketUrl = process.env.NEXT_PUBLIC_SITE_URL || defaultUrl;
-    const socketInstance = io(socketUrl);
-
+    const socketUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+                      (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001');
+    
+    console.log('Connecting to Socket.IO server:', socketUrl);
+    
+    const socketInstance = io(socketUrl, {
+      transports: ['websocket', 'polling'],
+      timeout: 20000,
+      forceNew: true
+    });
+    
     socketInstance.on('connect', () => {
       console.log('Connected to server');
       setIsConnected(true);
@@ -39,6 +45,11 @@ export function SocketProvider({ children }) {
 
     socketInstance.on('disconnect', () => {
       console.log('Disconnected from server');
+      setIsConnected(false);
+    });
+
+    socketInstance.on('connect_error', (error) => {
+      console.error('Socket connection error:', error);
       setIsConnected(false);
     });
 
