@@ -39,7 +39,7 @@ export default function Home() {
             <label htmlFor="roomCode" className="block text-sm font-medium text-gray-700 mb-2">
               Room Code
             </label>
-            <input
+            <input 
               type="text"
               id="roomCode"
               value={roomCode}
