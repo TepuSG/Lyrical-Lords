@@ -19,6 +19,7 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
       {/* Main Title */}
       <div className="text-center mb-8">
+        <img src="/LyricalLordsDark.png" alt="Lyrical Lords logo" className="mx-auto mb-4 w-36 h-auto" />
         <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-4">
           Lyrical Lords
         </h1>
