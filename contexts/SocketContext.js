@@ -42,8 +42,21 @@ export function SocketProvider({ children }) {
     console.log('Connecting to Socket.IO server:', socketUrl);
     try {
       const urlObj = new URL(socketUrl);
-      if (urlObj.port && urlObj.port !== '80' && urlObj.port !== '443' && typeof window !== 'undefined' && window.location.protocol === 'https:') {
-        console.warn('Socket URL uses a non-standard port while page is HTTPS. This may fail on hosted platforms that proxy TLS. Consider setting NEXT_PUBLIC_SOCKET_URL to your deployed origin (no port).');
+      // If we're on HTTPS and the computed socket URL is the same hostname but includes the dev port,
+      // strip the port and use the platform origin instead. This is a safe fallback for hosted platforms
+      // (Render, Vercel) that terminate TLS and don't expose arbitrary ports.
+      if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+        const hostMatches = urlObj.hostname === window.location.hostname;
+        const usingDevPort = urlObj.port && urlObj.port !== '80' && urlObj.port !== '443';
+        if (hostMatches && usingDevPort) {
+          const stripped = `${window.location.protocol}//${window.location.hostname}`;
+          console.warn(`Detected HTTPS page and socket URL on same host with non-standard port (${urlObj.port}). Stripping port and using ${stripped}`);
+          // Override socketUrl to use the platform origin (no port)
+          // Note: we intentionally do not modify the process.env values; this is a runtime fallback.
+          socketUrl = stripped;
+        } else if (usingDevPort) {
+          console.warn('Socket URL uses a non-standard port while page is HTTPS. This may fail on hosted platforms that proxy TLS. Consider setting NEXT_PUBLIC_SOCKET_URL to your deployed origin (no port).');
+        }
       }
     } catch (e) {
       // ignore malformed URL parsing
