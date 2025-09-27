@@ -6,6 +6,25 @@ const dev = process.env.NODE_ENV !== 'production';
 const hostname = dev ? 'localhost' : '0.0.0.0';
 const port = process.env.PORT || 3002;
 
+// Reduce noisy console output in production to lower CPU/IO on constrained hosts (like free Render)
+const isProd = !dev;
+const VERBOSE = process.env.VERBOSE_LOGGING === 'true' || !isProd;
+if (!VERBOSE) {
+  const origLog = console.log.bind(console);
+  console.log = (...args) => {
+    try {
+      const first = args[0] && String(args[0]);
+      // Allow startup / important lines to still print
+      if (first && (first.startsWith('> Ready') || first.startsWith('> Socket.IO server ready') || first.startsWith(' Socket allowed origins:') || first.startsWith('Server error:'))) {
+        origLog(...args);
+      }
+      // otherwise drop the log in production to reduce overhead
+    } catch (err) {
+      // swallow
+    }
+  };
+}
+
 // Create Next.js app
 const app = next({ dev, hostname: dev ? hostname : undefined, port });
 const handler = app.getRequestHandler();
