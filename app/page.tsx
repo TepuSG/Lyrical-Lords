@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const [roomCode, setRoomCode] = useState('');
@@ -8,10 +9,12 @@ export default function Home() {
   const handleJoinRoom = (e: React.FormEvent) => {
     e.preventDefault();
     if (roomCode.trim()) {
-      // Handle join room logic here
-      console.log('Joining room:', roomCode);
+      // Navigate to nickname page with room as query param
+      router.push(`/nickname?room=${encodeURIComponent(roomCode.trim())}`);
     }
   };
+
+  const router = useRouter();
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
@@ -47,6 +50,7 @@ export default function Home() {
               required
             />
           </div>
+          
           
           <button
             type="submit"
