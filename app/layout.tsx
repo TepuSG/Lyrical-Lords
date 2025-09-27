@@ -34,7 +34,7 @@ function Header() {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-4">
             <img src="/LyricalLordsLight.png" alt="logo" className="w-10 h-10" />
-            <h1 className="text-xl font-bold text-white">Lyrical Lords</h1>
+            <a href="/"className="text-xl font-bold text-white">Lyrical Lords</a>
           </div>
           <nav>
             <ul className="flex space-x-8">
