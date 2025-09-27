@@ -17,11 +17,14 @@ app.prepare().then(() => {
   const httpServer = createServer(handler);
   
   // Initialize Socket.IO server
+  // Prepare allowed origins safely — filter out undefined values and fall back to '*'
+  const allowedOrigins = process.env.NODE_ENV === 'production'
+    ? [process.env.RENDER_EXTERNAL_URL, process.env.FRONTEND_URL].filter(Boolean)
+    : ['*'];
+
   const io = new Server(httpServer, {
     cors: {
-      origin: process.env.NODE_ENV === 'production' 
-        ? [process.env.RENDER_EXTERNAL_URL, process.env.FRONTEND_URL] 
-        : "*",
+      origin: allowedOrigins.length ? allowedOrigins : ['*'],
       methods: ["GET", "POST"],
       credentials: true
     },
@@ -30,6 +33,11 @@ app.prepare().then(() => {
 
   io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
+    try {
+      console.log(' Socket handshake origin:', socket.handshake && socket.handshake.headers && socket.handshake.headers.origin);
+    } catch (e) {
+      // ignore
+    }
 
     // Join a room
     socket.on('join-room', ({ roomCode, nickname }) => {
@@ -281,5 +289,6 @@ app.prepare().then(() => {
     .listen(port, hostname, () => {
       console.log(`> Ready on http://${hostname}:${port}`);
       console.log(`> Socket.IO server ready`);
+      console.log(' Socket allowed origins:', allowedOrigins.length ? allowedOrigins : ['*']);
     });
 });

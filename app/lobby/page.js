@@ -8,6 +8,7 @@ function LobbyContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { players, isConnected, joinRoom, startGame, gameState } = useSocket();
+  const { joinError, roomFrozen } = useSocket();
   
   const roomCode = searchParams.get('code') || 'what12';
   const nickname = searchParams.get('nickname') || 'Player';
@@ -43,6 +44,12 @@ function LobbyContent() {
             <span className="text-green-600">✓ Connected</span>
           ) : (
             <span className="text-red-600">✗ Connecting...</span>
+          )}
+          {roomFrozen && (
+            <div className="text-yellow-600 mt-2">Game started — player list frozen.</div>
+          )}
+          {joinError && (
+            <div className="text-red-600 mt-2">{joinError}</div>
           )}
         </div>
       </div>
