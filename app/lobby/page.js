@@ -31,7 +31,7 @@ function LobbyContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="w-full">
       {/* Lobby Code at top */}
       <div className="text-center mb-8">
         <h1 className="text-2xl font-semibold text-gray-800 mb-2">Lobby Code</h1>
@@ -48,10 +48,10 @@ function LobbyContent() {
       </div>
 
       {/* Main content area */}
-      <div className="max-w-6xl mx-auto">
-        <div className="flex">
+      <div className="w-full">
+        <div className="flex flex-col md:flex-row md:items-start gap-6">
           {/* Player list */}
-          <div className="w-1/3">
+          <div className="md:w-1/3 w-full">
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Players</h2>
               <ul className="space-y-3">
@@ -73,7 +73,7 @@ function LobbyContent() {
           </div>
 
           {/* Me reserving space for later stuffs we havent made */}
-          <div className="flex-1 ml-6">
+          <div className="flex-1 md:ml-6 ml-0">
             {/* Start Game Section */}
             <div className="bg-white rounded-lg shadow-md p-8 h-full flex flex-col items-center justify-center">
               <h3 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
