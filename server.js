@@ -3,11 +3,11 @@ const { Server } = require('socket.io');
 const next = require('next');
 
 const dev = process.env.NODE_ENV !== 'production';
-const hostname = 'localhost';
+const hostname = dev ? 'localhost' : '0.0.0.0';
 const port = process.env.PORT || 3001;
 
 // Create Next.js app
-const app = next({ dev, hostname, port });
+const app = next({ dev, hostname: dev ? hostname : undefined, port });
 const handler = app.getRequestHandler();
 
 // Game rooms storage
@@ -19,9 +19,13 @@ app.prepare().then(() => {
   // Initialize Socket.IO server
   const io = new Server(httpServer, {
     cors: {
-      origin: "*",
-      methods: ["GET", "POST"]
-    }
+      origin: process.env.NODE_ENV === 'production' 
+        ? [process.env.RENDER_EXTERNAL_URL, process.env.FRONTEND_URL] 
+        : "*",
+      methods: ["GET", "POST"],
+      credentials: true
+    },
+    transports: ['websocket', 'polling']
   });
 
   io.on('connection', (socket) => {
@@ -152,10 +156,11 @@ app.prepare().then(() => {
 
   httpServer
     .once('error', (err) => {
-      console.error(err);
+      console.error('Server error:', err);
       process.exit(1);
     })
-    .listen(port, () => {
+    .listen(port, hostname, () => {
       console.log(`> Ready on http://${hostname}:${port}`);
+      console.log(`> Socket.IO server ready`);
     });
 });

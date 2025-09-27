@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "node server.js",
     "dev:next": "next dev --turbopack",
-    "build": "next build --turbopack",
-    "start": "node server.js",
+    "build": "next build",
+    "start": "NODE_ENV=production node server.js",
     "start:next": "next start"
   },
   "dependencies": {
