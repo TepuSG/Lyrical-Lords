@@ -62,7 +62,7 @@ function LyricContent() {
 
       {/* Card for lyric input */}
       <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md mx-auto">
-        <h2 className="text-2xl font-semibold text-gray-800 text-center mb-4">Write lyrics for this title</h2>
+  <h2 className="text-2xl font-semibold text-gray-800 text-center mb-4">{assignedSong && assignedSong.assignedTitle ? 'Write lyrics for this title' : 'Write the next lyric'}</h2>
         <div className="text-center mb-6">
           <div className="text-lg font-bold">
             {assignedSong ? (
