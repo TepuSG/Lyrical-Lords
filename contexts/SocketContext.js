@@ -21,11 +21,20 @@ export function SocketProvider({ children }) {
 
   useEffect(() => {
     // Initialize socket connection
-    const socketInstance = io(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3001');
-    
+    // Prefer an explicit env var, otherwise fall back to the current page origin (same host)
+    const defaultUrl = typeof window !== 'undefined' ? window.location.origin : undefined;
+    const socketUrl = process.env.NEXT_PUBLIC_SITE_URL || defaultUrl;
+    const socketInstance = io(socketUrl);
+
     socketInstance.on('connect', () => {
       console.log('Connected to server');
       setIsConnected(true);
+    });
+
+    // Handle connection errors (e.g. server not running)
+    socketInstance.on('connect_error', (err) => {
+      console.error('Socket connect error:', err);
+      setIsConnected(false);
     });
 
     socketInstance.on('disconnect', () => {
