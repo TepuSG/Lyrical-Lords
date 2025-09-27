@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   description: "Write songs, pass lyrics, create musical masterpieces together",
 };
 
-// Semantic Header Component
+// Header Component
 function Header() {
   return (
     <header className="bg-black shadow-sm border-b border-gray-700">
@@ -43,7 +43,7 @@ function Header() {
   );
 }
 
-// Semantic Footer Component
+// Footer Component
 function Footer() {
   return (
     <footer className="bg-gray-800 text-white">
