@@ -82,10 +82,58 @@ app.prepare().then(() => {
           title: songTitle,
           submittedAt: new Date()
         });
-        
+
+        // DEBUG: log current submission state for this room
+        try {
+          console.log(`Room ${roomCode} submissions: ${room.songTitles.length}/${room.players.length}`);
+          console.log(' Players:', room.players.map(p => ({ id: p.id, nickname: p.nickname })));
+          console.log(' Titles:', room.songTitles.map(t => ({ playerId: t.playerId, title: t.title })));
+        } catch (err) {
+          console.error('Error logging room state', err);
+        }
+
         // Check if all players have submitted
         if (room.songTitles.length === room.players.length) {
-          io.to(roomCode).emit('all-titles-submitted', room.songTitles);
+          // Assign each player a title that they did NOT submit.
+          // Build arrays of players and titles
+          const players = room.players.slice(); // [{id, nickname}]
+          const titles = room.songTitles.slice(); // [{playerId, title}]
+
+          // Create an array of indices for titles and derange until no index matches the same player
+          const n = players.length;
+          let indices = Array.from({ length: n }, (_, i) => i);
+
+          // Helper: shuffle array in-place
+          function shuffle(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+          }
+
+          // Attempt to derange: shuffle until no player gets their own title
+          let attempts = 0;
+          do {
+            shuffle(indices);
+            attempts++;
+            // If too many attempts (unlikely), break and allow possible conflicts
+            if (attempts > 1000) break;
+          } while (indices.some((idx, i) => titles[idx].playerId === players[i].id));
+
+          // Emit assigned title to each player privately and then signal start of lyrics phase
+          for (let i = 0; i < n; i++) {
+            const player = players[i];
+            const assignedTitleObj = titles[indices[i]];
+            const fromPlayer = room.players.find(p => p.id === assignedTitleObj.playerId);
+            const fromNickname = fromPlayer ? fromPlayer.nickname : 'Unknown';
+
+            // Send assigned title only to the specific player
+            io.to(player.id).emit('start-lyrics', {
+              assignedTitle: assignedTitleObj.title,
+              assignedFrom: fromNickname,
+              roomCode
+            });
+          }
         } else {
           // Update progress
           io.to(roomCode).emit('submission-progress', {

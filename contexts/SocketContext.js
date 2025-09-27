@@ -18,6 +18,8 @@ export function SocketProvider({ children }) {
   const [isConnected, setIsConnected] = useState(false);
   const [players, setPlayers] = useState([]);
   const [gameState, setGameState] = useState('lobby');
+  const [assignedSong, setAssignedSong] = useState(null);
+  const [lyricsResults, setLyricsResults] = useState(null);
 
   useEffect(() => {
     // Initialize socket connection
@@ -61,6 +63,18 @@ export function SocketProvider({ children }) {
       setGameState('playing');
     });
 
+    // Assigned song/title for the lyrics phase (private per-player)
+    socketInstance.on('start-lyrics', (payload) => {
+      // payload: { assignedTitle, assignedFrom, roomCode }
+      setAssignedSong(payload);
+    });
+
+    // When all lyrics are submitted, store results so pages can read and navigate
+    socketInstance.on('all-lyrics-submitted', (payload) => {
+      // payload: array of { playerId, lyrics, assignedSong, submittedAt }
+      setLyricsResults(payload);
+    });
+
     setSocket(socketInstance);
 
     // Cleanup on unmount
@@ -93,6 +107,10 @@ export function SocketProvider({ children }) {
     }
   };
 
+  const clearAssignedSong = () => setAssignedSong(null);
+
+  const clearLyricsResults = () => setLyricsResults(null);
+
   const leaveRoom = (roomCode) => {
     if (socket) {
       socket.emit('leave-room', { roomCode });
@@ -104,6 +122,8 @@ export function SocketProvider({ children }) {
     isConnected,
     players,
     gameState,
+    assignedSong,
+    lyricsResults,
     joinRoom,
     startGame,
     submitSongTitle,
