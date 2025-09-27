@@ -48,6 +48,9 @@ function SongPromptContent() {
     setSubmitted(true);
   };
 
+
+
+  
   // If assignedSong becomes available in context, automatically navigate to lyric page.
   useEffect(() => {
     if (assignedSong) {
