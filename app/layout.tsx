@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Comic_Neue } from "next/font/google";
+import { SocketProvider } from "../contexts/SocketContext";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -68,11 +69,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${comicFont.variable} font-comic antialiased min-h-screen flex flex-col`}
       >
-        <Header />
-        <main className="flex-grow">
-          {children}
-        </main>
-        <Footer />
+        <SocketProvider>
+          <Header />
+          <main className="flex-grow">
+            {children}
+          </main>
+          <Footer />
+        </SocketProvider>
       </body>
     </html>
   );

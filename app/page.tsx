@@ -5,16 +5,15 @@ import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const [roomCode, setRoomCode] = useState('');
+  const router = useRouter();
 
   const handleJoinRoom = (e: React.FormEvent) => {
     e.preventDefault();
     if (roomCode.trim()) {
-      // Navigate to nickname page with room as query param
-      router.push(`/nickname?room=${encodeURIComponent(roomCode.trim())}`);
+      // Navigate to nickname page with room code as query param
+      router.push(`/nickname?code=${encodeURIComponent(roomCode.trim())}`);
     }
   };
-
-  const router = useRouter();
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
